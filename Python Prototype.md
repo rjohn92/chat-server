@@ -275,7 +275,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     data = s.recv(1024)                # 4. Receive echo
     print("Server replied:", data.decode())
 
-
+```
 ##  {#section-21 .unnumbered}
 
 ## **Deep, Line-by-Line Explanation** {#deep-line-by-line-explanation .unnumbered}
