@@ -145,185 +145,136 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # [Sockets]
         # [Shutdown: 'with' auto-closes sockets]
 
 
-### **Detailed Breakdown (Line by Line, with Deep Reasoning)** {#detailed-breakdown-line-by-line-with-deep-reasoning .unnumbered}
+### Detailed Breakdown (Line by Line, with Deep Reasoning)
 
-#### import socket {#import-socket .unnumbered}
+#### `import socket`
 
-####  {#section .unnumbered}
+**What:**  
+Pulls in the Python standard library for socket programming.
 
-#### **What:** Pulls in the Python standard library for socket programming. 
+**Why:**  
+The socket module provides all necessary system calls for networking (open, bind, listen, accept, send, recv).
 
-#### **Why:** The socket module provides all necessary system calls for networking (open, bind, listen, accept, send, recv). 
+**Real-world:**  
+In C, these map directly to POSIX socket APIs (`socket()`, `bind()`, etc.).
 
-#### **Real-world:** In C, these map directly to POSIX socket APIs (socket(), bind(), etc.). 
+---
 
-####  {#section-1 .unnumbered}
+#### `HOST = '127.0.0.1'`  
+#### `PORT = 12345`
 
-#### HOST = \'127.0.0.1\' {#host-127.0.0.1 .unnumbered}
+**What:**  
+- `HOST`: IP address to listen on. `'127.0.0.1'` is the "loopback"—only accessible from the same machine.
+- `PORT`: Numeric port to listen on. `12345` is above 1024 ("unprivileged").
 
-#### PORT = 12345 {#port-12345 .unnumbered}
+**Why:**  
+- Loopback for safety (no remote access, good for local testing).
+- Unprivileged port means you don't need root privileges to run the server.
 
-####  {#section-2 .unnumbered}
+**Industry impact:**  
+Servers on port <1024 need root; always use high ports for user-space experiments.
 
-#### **What: **
+---
 
-#### HOST: IP address to listen on. \'127.0.0.1\' is the "loopback"---only accessible from the same machine. 
+#### `with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:`
 
-#### PORT: Numeric port to listen on. 12345 is above 1024 ("unprivileged"). 
+**What:**  
+Creates a new socket object.  
+- `AF_INET`: IPv4 addresses (vs. `AF_INET6` for IPv6).  
+- `SOCK_STREAM`: TCP socket (reliable, connection-oriented, no dropped packets unless connection is lost).
 
-#### **Why: **
+**Why TCP?**  
+- Reliable: All data is delivered in order, or you get an error.
+- No packet loss (for your code's purposes)—UDP is used when loss is acceptable (VoIP, some games, etc.).
 
-#### Loopback for safety (no remote access, good for local testing). 
+**What is a "packet"?**  
+Lowest-level unit of data transmission across a network. TCP hides this; your code just sends and receives a "stream" of bytes.
 
-#### Unprivileged port means you don't need root privileges to run the server. 
+---
 
-#### **Industry impact:** Servers on port \<1024 need root; always use high ports for user-space experiments. 
+#### `s.bind((HOST, PORT))`
 
-####  {#section-3 .unnumbered}
+**What:**  
+Tells the OS: "I want to receive any data sent to 127.0.0.1:12345."
 
-#### with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: {#with-socket.socketsocket.af_inet-socket.sock_stream-as-s .unnumbered}
+**Why:**  
+- The bind step attaches your server socket to a specific address/port.
+- No bind = OS won't deliver any packets to you, so clients can't connect.
 
-####  {#section-4 .unnumbered}
+**Real-world:**  
+In C, `bind()` takes a struct with IP and port; same logic.
 
-#### **What:** Creates a new socket object. AF_INET: IPv4 addresses (vs. AF_INET6 for IPv6). 
+---
 
-#### SOCK_STREAM: TCP socket (reliable, connection-oriented, no dropped packets unless connection is lost). 
+#### `s.listen(1)`
 
-#### **Why TCP? **
+**What:**  
+Tells OS: "Start listening for incoming connection attempts."  
+The argument (`1`) is the backlog: max number of queued connections waiting to be accepted.
 
-#### Reliable: All data is delivered in order, or you get an error. 
+**Why:**  
+- Required for TCP servers; tells the kernel you're ready.
+- "1" is fine for a single client (no concurrency).
 
-#### No packet loss (for your code's purposes)---UDP is used when loss is acceptable (VoIP, some games, etc.). 
+---
 
-#### **What is a "packet"?**
+#### `print("Server listening on", (HOST, PORT))`
 
-#### Lowest-level unit of data transmission across a network. TCP hides this; your code just sends and receives a "stream" of bytes. 
+**What:**  
+Self-explanatory logging.
 
-####  {#section-5 .unnumbered}
+---
 
-####  s.bind((HOST, PORT)) {#s.bindhost-port .unnumbered}
+#### `conn, addr = s.accept()`
 
-####  {#section-6 .unnumbered}
+**What:**  
+- Blocks until a client connects.
+- Returns a new socket object (`conn`) for communicating with that client, and the client's address/port (`addr`).
 
-#### **What:** Tells the OS: "I want to receive any data sent to 127.0.0.1:12345." 
+**Why:**  
+- You can handle multiple clients by looping over `accept` (for now, just 1).
+- `addr` is a tuple: (client IP, client port). Useful for logging or access control.
 
-#### **Why: **
+**Real-world:**  
+This is the "three-way handshake" (SYN/SYN-ACK/ACK).
 
-#### The bind step attaches your server socket to a specific address/port. 
+---
 
-#### No bind = OS won't deliver any packets to you, so clients can't connect. 
+#### `with conn:`  
+#### `print("Client connected:", addr)`  
+#### `data = conn.recv(1024)`  
+#### `print("Received:", data.decode())`  
+#### `conn.sendall(data)`
 
-#### **Real-world:** In C, bind() takes a struct with IP and port; same logic. 
+**with conn:**  
+Pythonic way to ensure the socket closes cleanly when you're done.
 
-####  {#section-7 .unnumbered}
+**data = conn.recv(1024):**  
+Blocks until the client sends data. Reads up to 1024 bytes.
 
-####  s.listen(1) {#s.listen1 .unnumbered}
+**data.decode():**  
+Converts bytes to string for printing (assumes UTF-8, standard).
 
-####  {#section-8 .unnumbered}
+**conn.sendall(data):**  
+Sends the received data back to the client (echo).
 
-#### **What: **
+---
 
-#### Tells OS: "Start listening for incoming connection attempts." 
+## client.py
 
-#### The argument (1) is the backlog: max number of queued connections waiting to be accepted. 
+```python
+import socket
 
-#### **Why: **
+HOST = '127.0.0.1'
+PORT = 12345
 
-#### Required for TCP servers; tells the kernel you're ready. 
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((HOST, PORT))            # 1. Connect to server
+    msg = input("Enter message: ")     # 2. Get user input
+    s.sendall(msg.encode())            # 3. Send message
+    data = s.recv(1024)                # 4. Receive echo
+    print("Server replied:", data.decode())
 
-#### "1" is fine for a single client (no concurrency). 
-
-####  {#section-9 .unnumbered}
-
-####  print(\"Server listening on\", (HOST, PORT)) {#printserver-listening-on-host-port .unnumbered}
-
-#### **What:** Self-explanatory logging. 
-
-####  {#section-10 .unnumbered}
-
-####  conn, addr = s.accept() {#conn-addr-s.accept .unnumbered}
-
-####  {#section-11 .unnumbered}
-
-#### **What: **
-
-#### Blocks until a client connects. 
-
-#### Returns a new socket object (conn) for communicating with that client, and the client's address/port (addr). 
-
-#### **Why: **
-
-#### You can handle multiple clients by looping over accept (for now, just 1). 
-
-#### addr is a tuple: (client IP, client port). Useful for logging or access control. 
-
-#### **Real-world:** This is the "three-way handshake" (SYN/SYN-ACK/ACK). 
-
-####  {#section-12 .unnumbered}
-
-####  with conn: {#with-conn .unnumbered}
-
-####  print(\"Client connected:\", addr) {#printclient-connected-addr .unnumbered}
-
-####  data = conn.recv(1024) {#data-conn.recv1024 .unnumbered}
-
-####  print(\"Received:\", data.decode()) {#printreceived-data.decode .unnumbered}
-
-####  conn.sendall(data) {#conn.sendalldata .unnumbered}
-
-####  {#section-13 .unnumbered}
-
-#### **with conn: **
-
-#### Pythonic way to ensure the socket closes cleanly when you're done. 
-
-#### **data = conn.recv(1024) **
-
-#### Blocks until the client sends data. 
-
-#### Reads up to 1024 bytes. 
-
-#### **data.decode() **
-
-#### Converts bytes to string for printing (assumes UTF-8, standard). 
-
-#### **conn.sendall(data) **
-
-#### Sends the received data back to the client (echo).
-
-####  {#section-14 .unnumbered}
-
-####  {#section-15 .unnumbered}
-
-##  {#section-16 .unnumbered}
-
-##  {#section-17 .unnumbered}
-
-##  {#section-18 .unnumbered}
-
-##  {#section-19 .unnumbered}
-
-## **client.py** {#client.py .unnumbered}
-
-#### **import socket** {#import-socket-1 .unnumbered}
-
-#### **HOST = \'127.0.0.1\'** {#host-127.0.0.1-1 .unnumbered}
-
-#### **PORT = 12345** {#port-12345-1 .unnumbered}
-
-####  {#section-20 .unnumbered}
-
-#### **with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:** {#with-socket.socketsocket.af_inet-socket.sock_stream-as-s-1 .unnumbered}
-
-####  **s.connect((HOST, PORT)) \# 1. Connect to server** {#s.connecthost-port-1.-connect-to-server .unnumbered}
-
-####  **msg = input(\"Enter message: \") \# 2. Get user input** {#msg-inputenter-message-2.-get-user-input .unnumbered}
-
-####  **s.sendall(msg.encode()) \# 3. Send message** {#s.sendallmsg.encode-3.-send-message .unnumbered}
-
-####  **data = s.recv(1024) \# 4. Receive echo** {#data-s.recv1024-4.-receive-echo .unnumbered}
-
-####  **print(\"Server replied:\", data.decode())** {#printserver-replied-data.decode .unnumbered}
 
 ##  {#section-21 .unnumbered}
 
