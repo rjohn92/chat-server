@@ -143,7 +143,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # [Sockets]
         print("Received:", data.decode())  # [Message Handling: decode text]
         conn.sendall(data)                 # [Protocol: echo back]
         # [Shutdown: 'with' auto-closes sockets]
-
+```
 
 ### Detailed Breakdown (Line by Line, with Deep Reasoning)
 
