@@ -12,7 +12,13 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # [Sockets]
     conn, addr = s.accept() # [Listener: accept a client]
     with conn:
         print(f"Client connected:", addr)  # [Testing/Interaction]
-        data = conn.recv(1024)            # [Message Handling: receive bytes]
-        print(f"Received:", data.decode())  # [Message Handling: decode text]
-        conn.sendall(data)                 # [Protocol: echo back]
-        # [Shutdown: 'with' auto-closes sockets]
+        while True:
+            data = conn.recv(1024)            # [Message Handling: receive bytes]
+            if not data:
+                print(f"No data received. Disconnecting...")
+                break
+            print(f"Received:", data.decode())  # [Message Handling: decode text]
+            conn.sendall(data)                 # [Protocol: echo back]
+            # [Shutdown: 'with' auto-closes sockets]
+    print("Server shutting down connection.")
+
