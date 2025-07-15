@@ -79,115 +79,71 @@ server.py
 
 client.py
 
--   **Separation of Concerns:\
-    > ** Each file is single-purpose:
 
-    -   server.py: Only handles listening, accepting, receiving, and
-        > replying.
+### Separation of Concerns
 
-    -   client.py: Only handles connecting, sending, and receiving.
+Each file is single-purpose:
+- `server.py`: Only handles listening, accepting, receiving, and replying.
+- `client.py`: Only handles connecting, sending, and receiving.
 
--   **Simplicity:\
-    > **
+**Simplicity:**
+- Minimal structure reduces cognitive load—easy to onboard, modify, or extend.
+- No complex directories or config files needed for a prototype.
 
-    -   Minimal structure reduces cognitive load---easy to onboard,
-        > modify, or extend.
+**Scalability:**
+- As the project grows, you can split further (e.g., `server/`, `client/`, `common/` for shared utilities, `tests/` for test scripts).
+- Professional codebases always separate protocol “roles” for clarity and testing.
 
-    -   No complex directories or config files needed for a prototype.
+---
 
--   **Scalability:\
-    > **
+## 4. Summary Table: Roles and Responsibilities
 
-    -   As the project grows, you can split further (e.g., server/,
-        > client/, common/ for shared utilities, tests/ for test
-        > scripts).
+| File      | Role   | Responsibilities                                 | Why Separate?             |
+|-----------|--------|--------------------------------------------------|---------------------------|
+| server.py | Server | Bind/listen, accept connections, receive, process, reply, close | Modular, reusable, testable |
+| client.py | Client | Connect to server, send, receive, close          | Modular, reusable, testable |
 
-    -   Professional codebases always separate protocol "roles" for
-        > clarity and testing.
+---
 
-### **4. Summary Table: Roles and Responsibilities** {#summary-table-roles-and-responsibilities .unnumbered}
+## B. Why Do We Need Each Component?
 
-  -----------------------------------------------------------------------------
-  **File**    **Role**   **Responsibilities**                **Why Separate?**
-  ----------- ---------- ----------------------------------- ------------------
-  server.py   Server     Bind/listen, accept connections,    Modular, reusable,
-                         receive, process, reply, close      testable
+| Component         | Why It's Needed                          | What It Enables                 |
+|-------------------|------------------------------------------|---------------------------------|
+| Sockets           | Actual data transmission over the network | Core network communication      |
+| Listener (Server) | Waits for connections, receives messages  | Accepts clients, processes input|
+| Initiator (Client)| Connects, sends messages, processes replies| Drives the conversation, initiates contact |
+| Protocol/Workflow | Defines valid interactions and message order | Prevents deadlocks, enables debugging |
+| Message Handling  | Converts between bytes and human-readable text | Robust, bug-free I/O           |
+| Buffering         | Ensures we handle the correct amount of data | Prevents overflows/underflows  |
+| Error Handling    | Detects and recovers from common network issues | Reliability, safety            |
+| Startup/Shutdown Ctrl | Ensures correct program sequencing     | Prevents race conditions, crashes |
+| Multi-process Testing | Allows you to actually observe the interaction | Real-world validation          |
+| Extensible Structure | Makes it easy to add new functionality  | Future-proofing, CNO prototyping|
 
-  client.py   Client     Connect to server, send, receive,   Modular, reusable,
-                         close                               testable
-  -----------------------------------------------------------------------------
+---
 
-### **B. Why Do We Need Each Component?** {#b.-why-do-we-need-each-component .unnumbered}
+## C. The Prototype: Minimal Echo Server & Client in Python
 
-  -------------------------------------------------------------------------
-  **Component**       **Why It\'s Needed**        **What It Enables**
-  ------------------- --------------------------- -------------------------
-  Sockets             Actual data transmission    Core network
-                      over the network            communication
+### `server.py` (With inline explanations)
 
-  Listener (Server)   Waits for connections,      Accepts clients,
-                      receives messages           processes input
+```python
+import socket  # [Sockets, Message Handling]
 
-  Initiator (Client)  Connects, sends messages,   Drives the conversation,
-                      processes replies           initiates contact
+HOST = '127.0.0.1'  # [Protocol/Workflow: where to listen]
+PORT = 12345
 
-  Protocol/Workflow   Defines valid interactions  Prevents deadlocks,
-                      and message order           enables debugging
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:  # [Sockets]
+    s.bind((HOST, PORT))    	# [Listener: binds to address/port]
+    s.listen(1)             	# [Listener: ready for 1 connection]
+    print("Server listening on", (HOST, PORT))
+    conn, addr = s.accept() 	# [Listener: accept a client]
+    with conn:
+        print("Client connected:", addr)   # [Testing/Interaction]
+        data = conn.recv(1024)             # [Message Handling: receive bytes]
+        print("Received:", data.decode())  # [Message Handling: decode text]
+        conn.sendall(data)                 # [Protocol: echo back]
+        # [Shutdown: 'with' auto-closes sockets]
 
-  Message Handling    Converts between bytes and  Robust, bug-free I/O
-                      human-readable text         
-
-  Buffering           Ensures we handle the       Prevents
-                      correct amount of data      overflows/underflows
-
-  Error Handling      Detects and recovers from   Reliability, safety
-                      common network issues       
-
-  Startup/Shutdown    Ensures correct program     Prevents race conditions,
-  Ctrl                sequencing                  crashes
-
-  Multi-process       Allows you to actually      Real-world validation
-  Testing             observe the interaction     
-
-  Extensible          Makes it easy to add new    Future-proofing, CNO
-  Structure           functionality               prototyping
-  -------------------------------------------------------------------------
-
-### **C. The Prototype: Minimal Echo Server & Client in Python** {#c.-the-prototype-minimal-echo-server-client-in-python .unnumbered}
-
-#### **server.py** {#server.py .unnumbered}
-
-(With inline explanations referencing the components above)
-
-**import socket \# \[Sockets, Message Handling\]**
-
-**HOST = \'127.0.0.1\' \# \[Protocol/Workflow: where to listen\]**
-
-**PORT = 12345**
-
-**with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s: \#
-\[Sockets\]**
-
-**s.bind((HOST, PORT)) \# \[Listener: binds to address/port\]**
-
-**s.listen(1) \# \[Listener: ready for 1 connection\]**
-
-**print(\"Server listening on\", (HOST, PORT))**
-
-**conn, addr = s.accept() \# \[Listener: accept a client\]**
-
-**with conn:**
-
-**print(\"Client connected:\", addr) \# \[Testing/Interaction\]**
-
-**data = conn.recv(1024) \# \[Message Handling: receive bytes\]**
-
-**print(\"Received:\", data.decode()) \# \[Message Handling: decode
-text\]**
-
-**conn.sendall(data) \# \[Protocol: echo back\]**
-
-**\# \[Shutdown: \'with\' auto-closes sockets\]**
 
 ### **Detailed Breakdown (Line by Line, with Deep Reasoning)** {#detailed-breakdown-line-by-line-with-deep-reasoning .unnumbered}
 
