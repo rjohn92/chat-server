@@ -1,122 +1,77 @@
-**Structure**
+# CNO Chat Server/Client: Architecture, Rationale, and Commentary
 
-### **1. Conceptual Roles** {#conceptual-roles .unnumbered}
+---
 
-#### **A. Server** {#a.-server .unnumbered}
+## 1. Conceptual Roles
 
--   **Function:\
-    > ** The server is a **passive listener**---it opens a network port,
-    > waits for connections, receives messages, and processes them
-    > (echoing back in this case).
+### A. Server
 
--   **Responsibility:\
-    > **
+**Function:**  
+The server is a passive listener—it opens a network port, waits for connections, receives messages, and processes them (echoing back in this case).
 
-    -   Binds to a known address/port.
+**Responsibilities:**
+- Binds to a known address/port.
+- Accepts incoming connections from any client.
+- Handles each connection: receives data, processes/responds, closes connection.
 
-    -   Accepts incoming connections from any client.
+**Necessity:**
+- In any network protocol, at least one side must be passively available to receive connections.
+- In CNO, this is how command-and-control (C2) servers, remote shells, bots, and most network services work.
+- Without a server, there is nothing for a client to connect to—no one to respond, no data exchange.
 
-    -   Handles each connection: receives data, processes/responds,
-        > closes connection.
+---
 
--   **Necessity:\
-    > **
+### B. Client
 
-    -   In any network protocol, at least one side must be passively
-        > available to receive connections.
+**Function:**  
+The client is the initiator—it knows the address of the server, opens a connection, sends messages, and processes responses.
 
-    -   In CNO, this is how command-and-control (C2) servers, remote
-        > shells, bots, and most network services work.
+**Responsibilities:**
+- Resolves the server’s address/port (either hardcoded, discovered, or configured).
+- Initiates the network handshake (connect).
+- Sends data, receives reply, closes connection.
 
-    -   Without a server, **there is nothing for a client to connect
-        > to**---no one to respond, no data exchange.
+**Necessity:**
+- Without a client, there are no requests made—nothing to trigger the server’s logic.
+- In real-world attacks, penetration tests, or protocol testing, the client role is used for fuzzing, exploitation, or data exfiltration.
+- In malware or C2 work, reverse shells act as clients to avoid inbound firewall restrictions.
 
-#### **B. Client** {#b.-client .unnumbered}
+---
 
--   **Function:\
-    > ** The client is the **initiator**---it knows the address of the
-    > server, opens a connection, sends messages, and processes
-    > responses.
+## 2. Why Separate Files?
 
--   **Responsibility:\
-    > **
+### Engineering Reasons
 
-    -   Resolves the server's address/port (either hardcoded,
-        > discovered, or configured).
+**Modularity:**
+- Keeping server and client logic in separate files ensures clean, maintainable code.
+- Each can be tested, run, or extended independently.
 
-    -   Initiates the network handshake (connect).
+**Clarity:**
+- You can launch the server or client in isolation for debugging or analysis.
+- The code is easier to read, reason about, and document.
 
-    -   Sends data, receives reply, closes connection.
+**Extensibility:**
+- You might want to add multi-client support, authentication, encryption, logging, or a GUI—separation keeps these concerns untangled.
 
--   **Necessity:\
-    > **
+**Reuse:**
+- The client can be repurposed to talk to different servers; the server can accept connections from any compatible client.
 
-    -   Without a client, there are no requests made---nothing to
-        > trigger the server's logic.
+### Reverse Engineering / Security / CNO Context
 
-    -   In real-world attacks, penetration tests, or protocol testing,
-        > the client role is used for fuzzing, exploitation, or data
-        > exfiltration.
+**Protocol Analysis:**
+- You often need to simulate either side when analyzing unknown binaries or C2 traffic—having both roles ready makes testing easy.
 
-    -   In malware or C2 work, reverse shells act as clients to avoid
-        > inbound firewall restrictions.
+**Fuzzing/Exploit Development:**
+- You may want to swap in a custom client to test for vulnerabilities in a server, or vice versa.
 
-### **2. Why Separate Files?** {#why-separate-files .unnumbered}
+**Malware Analysis:**
+- Most malicious binaries implement only one role (usually client); defenders need to simulate the other side for dynamic analysis.
 
-#### **Engineering Reasons:** {#engineering-reasons .unnumbered}
+---
 
--   **Modularity:\
-    > **
+## 3. Why This Folder Structure?
 
-    -   Keeping server and client logic in separate files ensures clean,
-        > maintainable code.
 
-    -   Each can be tested, run, or extended independently.
-
--   **Clarity:\
-    > **
-
-    -   You can launch the server or client in isolation for debugging
-        > or analysis.
-
-    -   The code is easier to read, reason about, and document.
-
--   **Extensibility:\
-    > **
-
-    -   You might want to add multi-client support, authentication,
-        > encryption, logging, or a GUI---separation keeps these
-        > concerns untangled.
-
--   **Reuse:\
-    > **
-
-    -   The client can be repurposed to talk to different servers; the
-        > server can accept connections from any compatible client.
-
-#### **Reverse Engineering / Security / CNO Context:** {#reverse-engineering-security-cno-context .unnumbered}
-
--   **Protocol Analysis:\
-    > **
-
-    -   You often need to simulate either side when analyzing unknown
-        > binaries or C2 traffic---having both roles ready makes testing
-        > easy.
-
--   **Fuzzing/Exploit Development:\
-    > **
-
-    -   You may want to swap in a custom client to test for
-        > vulnerabilities in a server, or vice versa.
-
--   **Malware Analysis:\
-    > **
-
-    -   Most malicious binaries implement only one role (usually
-        > client); defenders need to simulate the other side for dynamic
-        > analysis.
-
-### **3. Why This Folder Structure?** {#why-this-folder-structure .unnumbered}
 
 c-chat/
 
