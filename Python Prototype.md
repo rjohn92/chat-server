@@ -276,8 +276,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("Server replied:", data.decode())
 
 ```
-##  {#section-21 .unnumbered}
-
 ## **Deep, Line-by-Line Explanation** {#deep-line-by-line-explanation .unnumbered}
 
 import socket
